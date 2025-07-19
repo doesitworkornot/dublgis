@@ -2,6 +2,7 @@ import os
 import requests
 from bs4 import BeautifulSoup
 from random import choice
+from PIL import Image
 
 
 cities = [
@@ -68,6 +69,21 @@ class DublGISClient:
             return selected["id"]
         except Exception:
             return None
+
+    def get_place_image_url(self, place_id: str) -> Image:
+        response = requests.get(
+            f"{self.base_url}/items/byid?id={place_id}&fields=items.description,items.external_content&key=4f1cf2d3-6572-4f77-8e19-fc9a65b5af05"
+        )
+        response.json()
+
+        image_url = requests.get(
+            response.json()["result"]["items"][0]["external_content"][0][
+                "main_photo_url"
+            ],
+            stream=True,
+        ).raw
+
+        return image_url
 
     def get_place_info(self, place_id: str) -> tuple[str, str] | None:
         url = f"{self.base_url}/items/byid"
