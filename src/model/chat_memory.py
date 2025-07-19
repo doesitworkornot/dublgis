@@ -1,5 +1,6 @@
 from typing import List, Dict
 
+
 class ChatMemory:
     def __init__(self):
         self.history: Dict[str, List[Dict[str, str]]] = {}
