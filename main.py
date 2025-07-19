@@ -23,11 +23,13 @@ cities = [
     "Уфа"
 ]
 
+
 def get_json(url):
     response = requests.get(url)
     if response.status_code == 200:
         return response.json()
     return None
+
 
 def get_info(city):
     search_city_url = f'https://catalog.api.2gis.com/3.0/items?q={city}&key={dublgis_key}'
@@ -44,16 +46,18 @@ def get_info(city):
     place_name = place_info_json["full_name"]
     return place_name, place_info
 
+
 def gen_mystery():
     city = cities[randrange(len(cities))]
     place, description = get_info(city)
     return place, description
 
+
 def chat_loop():
     print("Чат запущен. Напишите 'по новой' или что-то подобное для сброса. Ctrl+C — выход.\n")
     model = Model(config["openai_key"])
     user_id = "default_user"  # In a real app, use a unique user/session id
-    place, description = "Московский кремль", "Там красные стены и сидит президент"# gen_mystery()
+    place, description = "Московский кремль", "Там красные стены и сидит президент"
     print(f"Загадано место: {place}\nОписание: {description}\n")  # For debug, remove in prod
     try:
         while True:
@@ -72,6 +76,7 @@ def chat_loop():
             print(f"Ассистент: {reply}\n")
     except KeyboardInterrupt:
         print("\nВыход из чата.")
+
 
 if __name__ == "__main__":
     
