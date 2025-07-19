@@ -3,10 +3,10 @@ from model.chat_memory import ChatMemory
 
 
 ACTIONS = [
-    "GUESS",     # пользователь предполагает, что за место (но НЕ назвал точно)
-    "RESET",     # просит начать заново
-    "CORRECT",   # назвал место полностью и точно
-    "OTHER",     # всё остальное
+    "GUESS",  # пользователь предполагает, что за место (но НЕ назвал точно)
+    "RESET",  # просит начать заново
+    "CORRECT",  # назвал место полностью и точно
+    "OTHER",  # всё остальное
 ]
 
 SYSTEM_PROMPT = (
@@ -26,6 +26,7 @@ SYSTEM_PROMPT = (
     "П: ‘Сбрось, хочу сначала’     → RESET\n"
 )
 
+
 class Predictor:
     def __init__(self, key: str, model_name: str = "gpt-4.1-mini") -> None:
         self.client = OpenAI(api_key=key)
@@ -33,7 +34,7 @@ class Predictor:
         self.memory = ChatMemory()
 
     def _ensure_system_prompt(self, user_id: int) -> None:
-        if not self.memory.get(user_id): 
+        if not self.memory.get(user_id):
             self.memory.append(user_id, "system", SYSTEM_PROMPT)
 
     def predict(self, user_id: int, text: str) -> str:
@@ -54,7 +55,6 @@ class Predictor:
 
         self.memory.append(user_id, "assistant", code)
         return code
-    
 
     def remember_assistant(self, user_id: int, text: str) -> None:
         self._ensure_system_prompt(user_id)

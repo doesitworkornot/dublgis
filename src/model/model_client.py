@@ -5,7 +5,9 @@ from .chat_memory import ChatMemory
 
 
 class Model:
-    def __init__(self: "Model", key: str, model_name: str = "chatgpt-4o-latest") -> None:
+    def __init__(
+        self: "Model", key: str, model_name: str = "chatgpt-4o-latest"
+    ) -> None:
         self.first_time = True
         self.model_name = model_name
         self.memory = ChatMemory()
@@ -22,8 +24,7 @@ class Model:
             "Нужно чтобы пользователь полностью отгадал название и местоположение достопремичательности"
         )
         if self.first_time:
-            system_content += ("Поздоровайся с пользователем, объясни ему правила игры.")
-    
+            system_content += "Поздоровайся с пользователем, объясни ему правила игры."
 
         messages = [
             {"role": "system", "content": [{"type": "text", "text": system_content}]}
@@ -40,7 +41,6 @@ class Model:
         answer = completion.choices[0].message.content.strip()
         self.memory.append(user_id, "assistant", answer)
         return answer
-
 
     def bid_farewell(self: "Model", user_id: int) -> str:
         farewell_prompt = (
@@ -62,7 +62,7 @@ class Model:
         reply = completion.choices[0].message.content.strip()
         self.memory.append(user_id, "assistant", reply)
         return reply
-    
+
     def ask(self: "Model", user_id: int, user_input: str) -> str:
         self.memory.append(user_id, "user", user_input)
         messages = self.memory.get(user_id)

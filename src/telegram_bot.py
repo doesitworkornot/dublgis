@@ -29,24 +29,30 @@ logging.basicConfig(
     format="%(asctime)s — %(levelname)s — %(message)s",
 )
 
+
 def get_user_logger(user_id: str) -> logging.Logger:
     """Возвращает (или создаёт) логер, пишущий в logs/<uid>.log"""
     logger_name = f"user_{user_id}"
     logger = logging.getLogger(logger_name)
 
-    if not logger.handlers: 
+    if not logger.handlers:
         os.makedirs("logs", exist_ok=True)
-        fh = logging.FileHandler(os.path.join("logs", f"{user_id}.log"), encoding="utf-8")
+        fh = logging.FileHandler(
+            os.path.join("logs", f"{user_id}.log"), encoding="utf-8"
+        )
         fh.setFormatter(logging.Formatter("%(asctime)s — %(message)s"))
         logger.addHandler(fh)
         logger.setLevel(logging.INFO)
-        logger.propagate = False  
+        logger.propagate = False
     return logger
+
 
 def new_round(user_id: str, context: ContextTypes.DEFAULT_TYPE) -> str:
     """Начинает новый раунд и возвращает приветствие для пользователя."""
-    city, place, description = dublgis_client.get_random_place_in_city_info()
-    context.user_data.update(city=city, place=place, description=description)
+    city, place, description, lat, lon = dublgis_client.get_random_place_in_city_info()
+    context.user_data.update(
+        city=city, place=place, description=description, lat=lat, lon=lon
+    )
 
     system_msg = f"Загадано место: {place}\nОписание: {description}"
     user_logger = get_user_logger(user_id)
@@ -58,6 +64,7 @@ def new_round(user_id: str, context: ContextTypes.DEFAULT_TYPE) -> str:
 
     user_logger.info(f"MODEL GREETING: {greeting}")
     return greeting
+
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     user_id = str(update.effective_user.id)
@@ -103,8 +110,30 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         user_logger.info(f"MODEL RESET REPLY: {reply}")
         await update.message.reply_text(reply)
 
-        photo = dublgis_client.get_place_image_url()
-        await update.message.reply_photo(photo)
+        image_url = dublgis_client.get_place_image_url()
+        if image_url:
+            await update.message.reply_photo(photo=image_url)
+
+        place = context.user_data.get("place")
+        lon = context.user_data.get("lon")
+        lat = context.user_data.get("lat")
+        user_logger.info(f"place: {place}")
+        if place and lon and lat:
+            nearby_places = dublgis_client.get_nearby_places(lat, lon, user_logger)
+            user_logger.info(f"nearby_places: {nearby_places}")
+            if nearby_places:
+                await update.message.reply_text(f"Вот несколько мест рядом с {place}")
+
+                for near_place in nearby_places:
+                    name = near_place["name"]
+                    description = near_place["description"]
+                    link = near_place["link"]
+                    image_url = near_place["image_url"]
+
+                    await update.message.reply_photo(photo=image_url)
+                    await update.message.reply_text(
+                        f"Название: {name}\n{description}\nСсылка:{link}"
+                    )
 
         greeting = new_round(user_id, context)
         await update.message.reply_text(greeting)
@@ -119,7 +148,9 @@ def main() -> None:
 
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CommandHandler("reset", reset_cmd))
-    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text))
+    application.add_handler(
+        MessageHandler(filters.TEXT & ~filters.COMMAND, handle_text)
+    )
 
     logging.info("Bot is running…  Ctrl‑C to stop.")
     application.run_polling()

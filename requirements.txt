@@ -4,3 +4,5 @@ requests==2.32.4
 ruff==0.4.2
 pre-commit==3.6.1
 pillow==11.3.0
+python-telegram-bot==22.2
+beautifulsoup4==4.13.4

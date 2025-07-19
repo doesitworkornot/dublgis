@@ -7,7 +7,6 @@ from dublgis.dublgis_client import DublGISClient
 from predict_model.model import Predictor
 
 
-
 def safe_input(prompt):
     try:
         return input(prompt)
@@ -33,24 +32,28 @@ def chat_loop(level=1):
     output = f"Загадано место: {place}\nОписание: {description}\n"
     print(output)
     greeting = model_client.init_conv(city, place, description, user_id)
-    model_predict.remember_assistant(user_id, f"Загадано место: {place}\nОписание: {description}\n")
-    
+    model_predict.remember_assistant(
+        user_id, f"Загадано место: {place}\nОписание: {description}\n"
+    )
+
     print(f"Ассистент: {greeting}")
     try:
         while True:
             user_input = safe_input("Вы: ").strip()
             if not user_input:
                 continue
-            
+
             prediction = model_predict.predict(user_id, user_input)
             print(f"SYTEM PREDICTION: {prediction}")
 
             if prediction == "RESET":
-                reply = model_client.reset(user_id)                
+                reply = model_client.reset(user_id)
                 print(f"Ассистент: {reply}\n")
                 model_client.reset(user_id)
                 model_predict.reset(user_id)
-                city, place, description = dublgis_client.get_random_place_in_city_info()
+                city, place, description = (
+                    dublgis_client.get_random_place_in_city_info()
+                )
                 greeting = model_client.init_conv(city, place, description, user_id)
                 print(f"Загадано место: {place}\nОписание: {description}\n")
                 print(greeting)
@@ -60,7 +63,9 @@ def chat_loop(level=1):
                 reply = model_client.reset(user_id)
                 model_predict.reset(user_id)
                 print(f"Ассистент: {reply}\n")
-                city, place, description = dublgis_client.get_random_place_in_city_info()
+                city, place, description = (
+                    dublgis_client.get_random_place_in_city_info()
+                )
                 greeting = model_client.init_conv(city, place, description, user_id)
                 print(f"Загадано место: {place}\nОписание: {description}\n")
                 print(greeting)
