@@ -11,8 +11,9 @@ class Model:
         self.memory = ChatMemory()
         self.client = OpenAI(api_key=key)
 
-
-    def init_conv(self: "Model", city: str, place: str, description: str, user_id: int) -> str:
+    def init_conv(
+        self: "Model", city: str, place: str, description: str, user_id: int
+    ) -> str:
         system_content = (
             "Ты играешь в игру 'Городской Акинатор'. Пользователь должен угадать загаданное место в городе, задавая тебе вопросы. "
             "Ты должен отвечать 'да', 'нет' или давать подсказки, если пользователь не может угадать долго. "
@@ -23,7 +24,9 @@ class Model:
             system_content += ("Поздоровайся с пользователем, объясни ему правила игры.")
     
 
-        messages = [{"role": "system", "content": [{"type": "text", "text": system_content}]}]
+        messages = [
+            {"role": "system", "content": [{"type": "text", "text": system_content}]}
+        ]
         self.memory.append(user_id, "system", messages[0]["content"][0]["text"])
 
         completion = self.client.chat.completions.create(
@@ -73,7 +76,6 @@ class Model:
         reply = completion.choices[0].message.content.strip()
         self.memory.append(user_id, "assistant", reply)
         return reply
-
 
     def reset(self: "Model", user_id: int) -> None:
         self.first_time = False
