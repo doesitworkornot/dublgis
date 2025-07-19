@@ -8,17 +8,36 @@ class Model:
     def __init__(self, key, model_name: str = "chatgpt-4o-latest") -> None:
         self.model_name = model_name
         self.memory = ChatMemory()
-        self.client = OpenAI(api_key=key) 
+        self.client = OpenAI(api_key=key)
+
+    def init_conv(self, city, place, description, user_id) -> str:
+        system_content = (
+            "Ты играешь в игру 'Городской Акинатор'. Пользователь должен угадать загаданное место в городе, задавая тебе вопросы. "
+            "Ты должен отвечать 'да', 'нет' или давать подсказки, если пользователь не может угадать долго. "
+            "Не раскрывай сразу загаданное место, жди пока пользователь его угадает или спросит напрямую. "
+            f"Загаданное место: {place}, находится оно в городе {city}. Вот его описание: {description} "
+            "Поздоровайся с пользователем, объясни ему правила игры."
+        )
+
+        messages = [{"role": "system", "content": [{"type": "text", "text": system_content}]}]
+        self.memory.append(user_id, "system", messages[0]["content"][0]["text"])
+
+        completion = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=300,
+        )
+
+        answer = completion.choices[0].message.content.strip()
+        self.memory.append(user_id, "assistant", answer)
+        return answer
+
+
 
     def ask(self, user_id: str, user_input: str) -> str:
         self.memory.append(user_id, "user", user_input)
-
-        messages = [{"role": "system", "content": (
-            "Ты играешь в игру 'Городской Акинатор'. Пользователь должен угадать загаданное место в городе, задавая тебе вопросы. "
-            "Ты должен отвечать 'да', 'нет' или давать подсказки, если пользователь не может угадать долго."
-            "Не раскрывай сразу загаданное место, жди пока пользователь его угадает или спросит напрямую."
-        )}]
-        messages += self.memory.get(user_id)
+        messages = self.memory.get(user_id)
 
         completion = self.client.chat.completions.create(
             model=self.model_name,
