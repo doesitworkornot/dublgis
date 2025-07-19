@@ -5,12 +5,13 @@ from .chat_memory import ChatMemory
 
 
 class Model:
-    def __init__(self, key, model_name: str = "chatgpt-4o-latest") -> None:
+    def __init__(self: "Model", key: str, model_name: str = "chatgpt-4o-latest") -> None:
         self.model_name = model_name
         self.memory = ChatMemory()
         self.client = OpenAI(api_key=key)
 
-    def init_conv(self, city, place, description, user_id) -> str:
+
+    def init_conv(self: "Model", city: str, place: str, description: str, user_id: int) -> str:
         system_content = (
             "Ты играешь в игру 'Городской Акинатор'. Пользователь должен угадать загаданное место в городе, задавая тебе вопросы. "
             "Ты должен отвечать 'да', 'нет' или давать подсказки, если пользователь не может угадать долго. "
@@ -34,8 +35,7 @@ class Model:
         return answer
 
 
-
-    def ask(self, user_id: str, user_input: str) -> str:
+    def ask(self: "Model", user_id: int, user_input: str) -> str:
         self.memory.append(user_id, "user", user_input)
         messages = self.memory.get(user_id)
 
@@ -50,5 +50,6 @@ class Model:
         self.memory.append(user_id, "assistant", reply)
         return reply
 
-    def reset(self, user_id: str) -> None:
+
+    def reset(self: "Model", user_id: int) -> None:
         self.memory.clear(user_id)

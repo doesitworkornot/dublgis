@@ -1,10 +1,17 @@
-import json
-import requests
-from random import randrange
+import sys
+from random import choice
 from dotenv import dotenv_values
 
 
 from model.model_client import Model
+from dublgis.dublgis_client import DublGISClient
+
+def safe_input(prompt):
+    try:
+        return input(prompt)
+    except UnicodeDecodeError:
+        print("\n[!] Проблема с кодировкой. Введите строку ещё раз:")
+        return sys.stdin.buffer.readline().decode('utf-8').strip()
 
 
 config = dotenv_values(".env")
@@ -24,57 +31,32 @@ cities = [
 ]
 
 
-def get_json(url):
-    response = requests.get(url)
-    if response.status_code == 200:
-        return response.json()
-    return None
-
-
-def get_info(city):
-    search_city_url = f'https://catalog.api.2gis.com/3.0/items?q={city}&key={dublgis_key}'
-    city_ind = get_json(search_city_url)["result"]["items"][0]["id"]
-
-    search_pl_url = f'https://catalog.api.2gis.com/3.0/items?q=достопримечательности&fields=items.point&city_id={city_ind}&key={dublgis_key}'
-    interensting_places = get_json(search_pl_url)["result"]["items"]
-    place_ids = [x["id"] for x in interensting_places]
-    place_id = place_ids[randrange(len(place_ids))]
-
-    place_info_url = f'https://catalog.api.2gis.com/3.0/items/byid?id={place_id}&key={dublgis_key}&fields=items.description'
-    place_info_json = get_json(place_info_url)["result"]["items"][0]
-    place_info = place_info_json["description"]
-    place_name = place_info_json["full_name"]
-    return place_name, place_info
-
-
-def gen_mystery():
-    city = cities[randrange(len(cities))]
-    place, description = get_info(city)
-    return place, description
-
-
 def chat_loop(level=1):
     print("Чат запущен. Напишите 'по новой' или что-то подобное для сброса. Ctrl+C — выход.\n")
-    model = Model(config["openai_key"])
-    user_id = "default_user"  # In a real app, use a unique user/session id
-    city, place, description ="Москва", "Московский кремль", "Там красные стены и сидит президент"
-    print(f"Загадано место: {place}\nОписание: {description}\n")  # For debug, remove in prod
-    greeting = model.init_conv(city, place, description, user_id)
+    model_client = Model(config["openai_key"])
+    dublgis_client = DublGISClient(config["dublgis"])
+    user_id = "default_user"
+    city = choice(cities)
+    place, description = dublgis_client.get_random_place_in_city_info(city)
+
+    print(f"Загадано место: {place}\nОписание: {description}\n")
+    greeting = model_client.init_conv(city, place, description, user_id)
     print(f"Ассистент: {greeting}")
     try:
         while True:
-            user_input = input("Вы: ").strip()
+            user_input = safe_input("Вы: ").strip()
             if not user_input:
                 continue
             if user_input.lower() in [
                 "по новой", "заново", "начнём сначала", "сбрось", "reset", "start over"
             ]:
-                model.reset(user_id)
+                model_client.reset(user_id)
                 print("Ассистент: Хорошо, начинаем с начала!\n")
-                place, description = gen_mystery()
-                print(f"Загадано место: {place}\nОписание: {description}\n")  # For debug, remove in prod
+                city = choice(cities)
+                place, description = dublgis_client.get_random_place_in_city_info(city)
+                print(f"Загадано место: {place}\nОписание: {description}\n")
                 continue
-            reply = model.ask(user_id, user_input)
+            reply = model_client.ask(user_id, user_input)
             print(f"Ассистент: {reply}\n")
     except KeyboardInterrupt:
         print("\nВыход из чата.")
