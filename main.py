@@ -53,12 +53,14 @@ def gen_mystery():
     return place, description
 
 
-def chat_loop():
+def chat_loop(level=1):
     print("Чат запущен. Напишите 'по новой' или что-то подобное для сброса. Ctrl+C — выход.\n")
     model = Model(config["openai_key"])
     user_id = "default_user"  # In a real app, use a unique user/session id
-    place, description = "Московский кремль", "Там красные стены и сидит президент"
+    city, place, description ="Москва", "Московский кремль", "Там красные стены и сидит президент"
     print(f"Загадано место: {place}\nОписание: {description}\n")  # For debug, remove in prod
+    greeting = model.init_conv(city, place, description, user_id)
+    print(f"Ассистент: {greeting}")
     try:
         while True:
             user_input = input("Вы: ").strip()
@@ -79,7 +81,6 @@ def chat_loop():
 
 
 if __name__ == "__main__":
-    
-    chat_loop()
+    chat_loop(level=1)
 
     
