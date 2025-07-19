@@ -50,10 +50,10 @@ def gen_mystery():
     return place, description
 
 def chat_loop():
-    print("Чат с vLLM запущен. Напишите 'по новой' или что-то подобное для сброса. Ctrl+C — выход.\n")
-    model = Model()
+    print("Чат запущен. Напишите 'по новой' или что-то подобное для сброса. Ctrl+C — выход.\n")
+    model = Model(config["openai_key"])
     user_id = "default_user"  # In a real app, use a unique user/session id
-    place, description = gen_mystery()
+    place, description = "Московский кремль", "Там красные стены и сидит президент"# gen_mystery()
     print(f"Загадано место: {place}\nОписание: {description}\n")  # For debug, remove in prod
     try:
         while True:
@@ -74,6 +74,7 @@ def chat_loop():
         print("\nВыход из чата.")
 
 if __name__ == "__main__":
+    
     chat_loop()
 
     

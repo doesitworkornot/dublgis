@@ -1,14 +1,14 @@
 from openai import OpenAI
 
 
-from chat_memory import ChatMemory
+from .chat_memory import ChatMemory
 
 
 class Model:
-    def __init__(self, model_name: str = "gpt-4o") -> None:
+    def __init__(self, key, model_name: str = "chatgpt-4o-latest") -> None:
         self.model_name = model_name
         self.memory = ChatMemory()
-        self.client = OpenAI() 
+        self.client = OpenAI(api_key=key) 
 
     def ask(self, user_id: str, user_input: str) -> str:
         self.memory.append(user_id, "user", user_input)
