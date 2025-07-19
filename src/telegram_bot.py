@@ -108,11 +108,13 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         model_predict.reset(user_id)
 
         user_logger.info(f"MODEL RESET REPLY: {reply}")
-        await update.message.reply_text(reply)
-
         image_url = dublgis_client.get_place_image_url()
         if image_url:
-            await update.message.reply_photo(photo=image_url)
+            await update.message.reply_photo(
+                photo=image_url, caption=reply, parse_mode="HTML"
+            )
+        else:
+            await update.message.reply_text(reply, parse_mode="HTML")
 
         place = context.user_data.get("place")
         lon = context.user_data.get("lon")
@@ -125,15 +127,27 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 await update.message.reply_text(f"Вот несколько мест рядом с {place}")
 
                 for near_place in nearby_places:
-                    name = near_place["name"]
-                    description = near_place["description"]
-                    link = near_place["link"]
-                    image_url = near_place["image_url"]
-
-                    await update.message.reply_photo(photo=image_url)
-                    await update.message.reply_text(
-                        f"Название: {name}\n{description}\nСсылка:{link}"
+                    caption = f"<b>{near_place['name']}</b>\n"
+                    if near_place["description"]:
+                        caption += f"{near_place['description']}\n"
+                    if near_place["rating"]:
+                        caption += f"{near_place['rating']}\n"
+                    if near_place["reviews_link"]:
+                        caption += f"<a href='{near_place['reviews_link']}'>Почитать отзывы</a>\n"
+                    if near_place["inside"]:
+                        caption += f"<a href='{near_place['inside']}'>Организации в здании</a>\n"
+                    caption += (
+                        f"<a href='{near_place['object_link']}'>Открыть в 2ГИС</a>"
                     )
+
+                    try:
+                        await update.message.reply_photo(
+                            photo=near_place["image_url"],
+                            caption=caption,
+                            parse_mode="HTML",
+                        )
+                    except Exception:
+                        await update.message.reply_text(caption, parse_mode="HTML")
 
         greeting = new_round(user_id, context)
         await update.message.reply_text(greeting)

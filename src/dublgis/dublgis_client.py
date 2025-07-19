@@ -101,7 +101,7 @@ class DublGISClient:
         radius: int = 2000,
         limit: int = 10,
     ) -> list[dict]:
-        query = "кафе, ресторан, достопримечательность, университет, вуз, колледж, торговый центр, бизнес-центр, храм, церковь, мечеть, музей, театр, галерея"
+        query = "кафе, ресторан, достопримечательность, университет, вуз, торговый центр, бизнес-центр, храм, церковь, мечеть, музей, театр, галерея"
 
         url = f"{self.base_url}/items"
         params = {
@@ -111,7 +111,7 @@ class DublGISClient:
             "sort": "distance",
             "page_size": 10,
             "type": "branch",
-            "fields": "items.point,items.rubrics,items.links,items.media,items.description",
+            "fields": "items.point,items.reviews,items.links,items.media,items.description",
             "key": self.api_key,
         }
 
@@ -130,10 +130,14 @@ class DublGISClient:
                 {
                     "name": self._clean_text(item["name"]),
                     "description": self._clean_text(item.get("description", "")),
-                    "link": self.get_browser_link(item["id"]),
+                    "rating": item.get("reviews", {}).get("general_rating"),
+                    "reviews_link": f"{self.get_browser_link(item['id'])}/tab/reviews",
+                    "inside": f"{self.get_browser_link(item['id'])}/tab/inside",
+                    "object_link": self.get_browser_link(item["id"]),
                     "image_url": self.get_place_image_url(item["id"]),
                 }
             )
+
             logger.info(f"RESULTS: {results}")
             if len(results) >= limit:
                 break
