@@ -28,8 +28,11 @@ def chat_loop(level=1):
     user_id = "default_user"
     city, place, description = dublgis_client.get_random_place_in_city_info()
 
-    print(f"Загадано место: {place}\nОписание: {description}\n")
+    output = f"Загадано место: {place}\nОписание: {description}\n"
+    print(output)
     greeting = model_client.init_conv(city, place, description, user_id)
+    model_predict.remember_assistant(user_id, f"Загадано место: {place}\nОписание: {description}\n")
+    
     print(f"Ассистент: {greeting}")
     try:
         while True:
@@ -37,20 +40,28 @@ def chat_loop(level=1):
             if not user_input:
                 continue
             
-            prediction = model_predict.predict(user_input)
-            print(f"SYTEM PREDICTION: {model_predict.predict(user_input)}")
+            prediction = model_predict.predict(user_id, user_input)
+            print(f"SYTEM PREDICTION: {prediction}")
 
-            if prediction == "RESET": # or == "CORRECT"
+            if prediction == "RESET":
                 reply = model_client.reset(user_id)                
                 print(f"Ассистент: {reply}\n")
                 model_client.reset(user_id)
+                model_predict.reset(user_id)
                 city, place, description = dublgis_client.get_random_place_in_city_info()
                 greeting = model_client.init_conv(city, place, description, user_id)
                 print(f"Загадано место: {place}\nОписание: {description}\n")
                 print(greeting)
                 continue
 
+            if prediction == "CORRECT":
+                reply = model_client.reset(user_id)
+                model_predict.reset(user_id)
+                print(f"Ассистент: {reply}\n")
+                continue
+
             reply = model_client.ask(user_id, user_input)
+            model_predict.remember_assistant(user_id, reply)
             print(f"Ассистент: {reply}\n")
     except KeyboardInterrupt:
         print("\nВыход из чата.")
