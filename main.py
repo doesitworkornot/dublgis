@@ -40,15 +40,14 @@ def chat_loop(level=1):
             prediction = model_predict.predict(user_input)
             print(f"SYTEM PREDICTION: {model_predict.predict(user_input)}")
 
-            if prediction == "RESET":
-                reveal_msg = f"Это место было: {place}. Его описание: {description}."
-                reply = model_client.ask(user_id, user_input + reveal_msg)
+            if prediction == "RESET": # or == "CORRECT"
+                reply = model_client.reset(user_id)                
                 print(f"Ассистент: {reply}\n")
                 model_client.reset(user_id)
-                print("Ассистент: Хорошо, начинаем с начала!\n")
                 city, place, description = dublgis_client.get_random_place_in_city_info()
                 greeting = model_client.init_conv(city, place, description, user_id)
                 print(f"Загадано место: {place}\nОписание: {description}\n")
+                print(greeting)
                 continue
 
             reply = model_client.ask(user_id, user_input)
