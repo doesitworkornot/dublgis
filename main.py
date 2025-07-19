@@ -17,27 +17,13 @@ def safe_input(prompt):
 config = dotenv_values(".env")
 dublgis_key = config['dublgis']
 
-cities = [
-    "Москва",
-    "Санкт-Петербург",
-    "Новосибирск",
-    "Екатеринбург",
-    "Казань",
-    "Нижний Новгород",
-    "Челябинск",
-    "Самара",
-    "Ростов-на-Дону",
-    "Уфа"
-]
-
 
 def chat_loop(level=1):
     print("Чат запущен. Напишите 'по новой' или что-то подобное для сброса. Ctrl+C — выход.\n")
     model_client = Model(config["openai_key"])
     dublgis_client = DublGISClient(config["dublgis"])
     user_id = "default_user"
-    city = choice(cities)
-    place, description = dublgis_client.get_random_place_in_city_info(city)
+    city, place, description = dublgis_client.get_random_place_in_city_info()
 
     print(f"Загадано место: {place}\nОписание: {description}\n")
     greeting = model_client.init_conv(city, place, description, user_id)
@@ -52,8 +38,7 @@ def chat_loop(level=1):
             ]:
                 model_client.reset(user_id)
                 print("Ассистент: Хорошо, начинаем с начала!\n")
-                city = choice(cities)
-                place, description = dublgis_client.get_random_place_in_city_info(city)
+                city, place, description = dublgis_client.get_random_place_in_city_info()
                 print(f"Загадано место: {place}\nОписание: {description}\n")
                 continue
             reply = model_client.ask(user_id, user_input)
