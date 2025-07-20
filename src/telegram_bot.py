@@ -110,9 +110,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         user_logger.info(f"MODEL RESET REPLY: {reply}")
         image_url = dublgis_client.get_place_image_url()
         if image_url:
-            await update.message.reply_photo(
-                photo=image_url, caption=reply, parse_mode="HTML"
-            )
+            await update.message.reply_photo(photo=image_url, caption=reply, parse_mode="HTML")
         else:
             await update.message.reply_text(reply, parse_mode="HTML")
 
@@ -125,7 +123,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             user_logger.info(f"nearby_places: {nearby_places}")
             if nearby_places:
                 await update.message.reply_text(f"Вот несколько мест рядом с {place}")
-
                 for near_place in nearby_places:
                     caption = f"<b>{near_place['name']}</b>\n"
                     if near_place["description"]:
@@ -136,9 +133,7 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                         caption += f"<a href='{near_place['reviews_link']}'>Почитать отзывы</a>\n"
                     if near_place["inside"]:
                         caption += f"<a href='{near_place['inside']}'>Организации в здании</a>\n"
-                    caption += (
-                        f"<a href='{near_place['object_link']}'>Открыть в 2ГИС</a>"
-                    )
+                    caption += f"<a href='{near_place['object_link']}'>Открыть в 2ГИС</a>"
 
                     try:
                         await update.message.reply_photo(
@@ -153,8 +148,41 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         await update.message.reply_text(greeting)
         return
 
+    remaining = model_client.max_attempts - model_client.memory.attempts_count
+    if remaining <= 5:
+        place = context.user_data.get("place")
+        description = context.user_data.get("description")
+        image_url = dublgis_client.get_place_image_url()
+        user_logger.info(f"REMAINING ATTEMPTS: {remaining}")
+
+        if image_url:
+            caption = (
+                f"<b>Подсказка!</b>\n"
+                f"Осталось всего <b>{remaining}</b> попыток.\n\n"
+                f"<b>Описание:</b> {description}"
+            )
+            await update.message.reply_photo(photo=image_url, caption=caption, parse_mode="HTML")
+        elif description:
+            await update.message.reply_text(
+                f"Осталось всего <b>{remaining}</b> попыток.\n"
+                f"<b>Описание:</b> {description}",
+                parse_mode="HTML"
+            )
+        else:
+            reply = model_client.reset(user_id)
+            model_predict.reset(user_id)
+            await update.message.reply_text(
+                "Вы исчерпали попытки, и не удалось получить подсказку.\n"
+                "Вот правильный ответ:\n\n" + reply,
+                parse_mode="HTML"
+            )
+            greeting = new_round(user_id, context)
+            await update.message.reply_text(greeting)
+            return
+
     user_logger.info(f"MODEL: {reply}")
     await update.message.reply_text(reply)
+
 
 
 def main() -> None:

@@ -6,12 +6,14 @@ from .chat_memory import ChatMemory
 
 class Model:
     def __init__(
-        self: "Model", key: str, model_name: str = "chatgpt-4o-latest"
+        self: "Model", key: str, model_name: str = "chatgpt-4o-latest",
+        max_attempts: int = 20
     ) -> None:
         self.first_time = True
         self.model_name = model_name
         self.memory = ChatMemory()
         self.client = OpenAI(api_key=key)
+        self.max_attempts = max_attempts
 
     def init_conv(
         self: "Model", city: str, place: str, description: str, user_id: int
@@ -76,6 +78,7 @@ class Model:
 
         reply = completion.choices[0].message.content.strip()
         self.memory.append(user_id, "assistant", reply)
+        self.memory.attempts_count += 1
         return reply
 
     def reset(self: "Model", user_id: int) -> None:
