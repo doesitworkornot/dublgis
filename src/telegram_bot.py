@@ -104,7 +104,16 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     user_logger.info(f"PREDICTOR: {prediction}")
 
     if prediction in ("RESET", "CORRECT"):
-        reply = model_client.reset(user_id)
+        place = context.user_data.get("place")
+        lon = context.user_data.get("lon")
+        lat = context.user_data.get("lat")
+        user_logger.info(f"place: {place}")
+        nearby_places = None
+        if place and lon and lat:
+            nearby_places = dublgis_client.get_nearby_places(lat, lon, user_logger)[:3]
+            user_logger.info(f"nearby_places: {nearby_places}")
+
+        reply = model_client.reset(user_id, nearby_places)
         model_predict.reset(user_id)
 
         user_logger.info(f"MODEL RESET REPLY: {reply}")
@@ -116,38 +125,31 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         else:
             await update.message.reply_text(reply, parse_mode="HTML")
 
-        place = context.user_data.get("place")
-        lon = context.user_data.get("lon")
-        lat = context.user_data.get("lat")
-        user_logger.info(f"place: {place}")
-        if place and lon and lat:
-            nearby_places = dublgis_client.get_nearby_places(lat, lon, user_logger)
-            user_logger.info(f"nearby_places: {nearby_places}")
-            if nearby_places:
-                await update.message.reply_text(f"Вот несколько мест рядом с {place}")
+            # if nearby_places:
+            #     # await update.message.reply_text(f"Вот несколько мест рядом с {place}")
 
-                for near_place in nearby_places:
-                    caption = f"<b>{near_place['name']}</b>\n"
-                    if near_place["description"]:
-                        caption += f"{near_place['description']}\n"
-                    if near_place["rating"]:
-                        caption += f"{near_place['rating']}\n"
-                    if near_place["reviews_link"]:
-                        caption += f"<a href='{near_place['reviews_link']}'>Почитать отзывы</a>\n"
-                    if near_place["inside"]:
-                        caption += f"<a href='{near_place['inside']}'>Организации в здании</a>\n"
-                    caption += (
-                        f"<a href='{near_place['object_link']}'>Открыть в 2ГИС</a>"
-                    )
+            #     for near_place in nearby_places:
+            #         caption = f"<b>{near_place['name']}</b>\n"
+            #         if near_place["description"]:
+            #             caption += f"{near_place['description']}\n"
+            #         if near_place["rating"]:
+            #             caption += f"{near_place['rating']}\n"
+            #         if near_place["reviews_link"]:
+            #             caption += f"<a href='{near_place['reviews_link']}'>Почитать отзывы</a>\n"
+            #         if near_place["inside"]:
+            #             caption += f"<a href='{near_place['inside']}'>Организации в здании</a>\n"
+            #         caption += (
+            #             f"<a href='{near_place['object_link']}'>Открыть в 2ГИС</a>"
+            #         )
 
-                    try:
-                        await update.message.reply_photo(
-                            photo=near_place["image_url"],
-                            caption=caption,
-                            parse_mode="HTML",
-                        )
-                    except Exception:
-                        await update.message.reply_text(caption, parse_mode="HTML")
+            #         try:
+            #             await update.message.reply_photo(
+            #                 photo=near_place["image_url"],
+            #                 caption=caption,
+            #                 parse_mode="HTML",
+            #             )
+            #         except Exception:
+            #             await update.message.reply_text(caption, parse_mode="HTML")
 
         greeting = new_round(user_id, context)
         await update.message.reply_text(greeting)
