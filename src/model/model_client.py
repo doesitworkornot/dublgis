@@ -44,13 +44,20 @@ class Model:
         self.memory.append(user_id, "assistant", answer)
         return answer
 
-    def bid_farewell(self: "Model", user_id: int) -> str:
+    def bid_farewell(self: "Model", user_id: int, places: list) -> str:
         farewell_prompt = (
             "Поблагодари пользователя за хорошую игру"
             "Расскажи пользователю о месте, которое было загадано"
             "Постарайся не быть слишком длинным и подробным, но и чтобы основные сведения были рассказаны"
             "Не прощайся с пользователем"
         )
+        if places is not None:
+            farewell_prompt += (
+                "Порекомендуй пользователю эти места и объясни почему они похожи на загаданное место:"
+                "Если у этого места хороший рейтинг, то обязательно похвали его и расскажи о нем"
+                "Постарайся быть немногословным, но при этом достаточным, чтобы заинтриговать пользоваателя"
+                f"Места: {places}"
+            )
         self.memory.append(user_id, "system", farewell_prompt)
         messages = self.memory.get(user_id)
 
@@ -91,8 +98,8 @@ class Model:
         self.memory.attempts_count += 1
         return reply
 
-    def reset(self: "Model", user_id: int) -> None:
+    def reset(self: "Model", user_id: int, places: list) -> None:
         self.first_time = False
-        reply = self.bid_farewell(user_id)
+        reply = self.bid_farewell(user_id, places)
         self.memory.clear(user_id)
         return reply
