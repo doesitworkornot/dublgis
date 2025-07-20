@@ -31,7 +31,6 @@ logging.basicConfig(
 
 
 def get_user_logger(user_id: str) -> logging.Logger:
-    """Возвращает (или создаёт) логер, пишущий в logs/<uid>.log"""
     logger_name = f"user_{user_id}"
     logger = logging.getLogger(logger_name)
 
@@ -48,7 +47,6 @@ def get_user_logger(user_id: str) -> logging.Logger:
 
 
 def new_round(user_id: str, context: ContextTypes.DEFAULT_TYPE) -> str:
-    """Начинает новый раунд и возвращает приветствие для пользователя."""
     city, place, description, lat, lon = dublgis_client.get_random_place_in_city_info()
     context.user_data.update(
         city=city, place=place, description=description, lat=lat, lon=lon
@@ -73,7 +71,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def reset_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Команда /reset — принудительный сброс раунда."""
     user_id = str(update.effective_user.id)
     user_logger = get_user_logger(user_id)
 
