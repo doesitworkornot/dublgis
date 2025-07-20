@@ -7,7 +7,7 @@ from .chat_memory import ChatMemory
 class Model:
     def __init__(
         self: "Model", key: str, model_name: str = "chatgpt-4o-latest",
-        max_attempts: int = 6
+        max_attempts: int = 20
     ) -> None:
         self.first_time = True
         self.model_name = model_name
