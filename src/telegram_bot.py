@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 from dotenv import dotenv_values
 from telegram import Update
@@ -9,6 +10,7 @@ from telegram.ext import (
     ContextTypes,
     filters,
 )
+
 
 from model.model_client import Model
 from dublgis.dublgis_client import DublGISClient
@@ -46,6 +48,10 @@ def get_user_logger(user_id: str) -> logging.Logger:
     return logger
 
 
+def escape_markdown(text: str) -> str:
+    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
+
+
 def new_round(user_id: str, context: ContextTypes.DEFAULT_TYPE) -> str:
     city, place, description, lat, lon = dublgis_client.get_random_place_in_city_info()
     context.user_data.update(
@@ -76,8 +82,9 @@ async def reset_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
     user_logger.info("CMD: /reset")
     reply = model_client.reset(user_id)
+    escaped_reply = escape_markdown(reply)
     model_predict.reset(user_id)
-    user_logger.info(f"MODEL RESET REPLY: {reply}")
+    user_logger.info(f"MODEL RESET REPLY: {escaped_reply}")
 
     await update.message.reply_text("Диалог перезапущен.")
     greeting = new_round(user_id, context)
@@ -95,7 +102,8 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
     user_logger.info(f"USER: {user_input}")
 
     reply = model_client.ask(user_id, user_input)
-    model_predict.remember_assistant(user_id, reply)
+    escaped_reply = escape_markdown(reply)
+    model_predict.remember_assistant(user_id, escaped_reply)
 
     prediction = model_predict.predict(user_id, user_input)
     user_logger.info(f"PREDICTOR: {prediction}")
@@ -111,14 +119,15 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
             user_logger.info(f"nearby_places: {nearby_places}")
 
         reply = model_client.reset(user_id, nearby_places)
+        escaped_reply = escape_markdown(reply)
         model_predict.reset(user_id)
 
-        user_logger.info(f"MODEL RESET REPLY: {reply}")
+        user_logger.info(f"MODEL RESET REPLY: {escaped_reply}")
         image_url = dublgis_client.get_place_image_url()
         if image_url:
-            await update.message.reply_photo(photo=image_url, caption=reply, parse_mode="HTML")
+            await update.message.reply_photo(photo=image_url, caption=escaped_reply, parse_mode="MarkdownV2")
         else:
-            await update.message.reply_text(reply, parse_mode="HTML")
+            await update.message.reply_text(escaped_reply, parse_mode="MarkdownV2")
 
         greeting = new_round(user_id, context)
         await update.message.reply_text(greeting)
@@ -140,23 +149,26 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 f"{hint}"
             )
             if image_url:
-                await update.message.reply_photo(photo=image_url, caption=caption, parse_mode="HTML")
+                await update.message.reply_photo(photo=image_url, caption=caption, parse_mode="MarkdownV2")
             else:
-                await update.message.reply_text(caption, parse_mode="HTML")
+                await update.message.reply_text(caption, parse_mode="MarkdownV2")
     if remaining == 0:
             reply = model_client.reset(user_id)
             model_predict.reset(user_id)
+            escaped_reply = escape_markdown(reply)
+            
             await update.message.reply_text(
                 "Попытки исчерпаны, и не удалось получить подсказку.\n"
-                "Вот правильный ответ:\n\n" + reply,
-                parse_mode="HTML"
+                "Вот правильный ответ:\n\n" + escaped_reply,
+                parse_mode="MarkdownV2"
             )
             greeting = new_round(user_id, context)
             await update.message.reply_text(greeting)
             return
 
     user_logger.info(f"MODEL: {reply}")
-    await update.message.reply_text(reply)
+    escaped_reply = escape_markdown(reply)
+    await update.message.reply_text(escaped_reply)
 
 
 def main() -> None:
