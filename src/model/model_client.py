@@ -6,12 +6,14 @@ from .chat_memory import ChatMemory
 
 class Model:
     def __init__(
-        self: "Model", key: str, model_name: str = "chatgpt-4o-latest"
+        self: "Model", key: str, model_name: str = "chatgpt-4o-latest",
+        max_attempts: int = 20
     ) -> None:
         self.first_time = True
         self.model_name = model_name
         self.memory = ChatMemory()
         self.client = OpenAI(api_key=key)
+        self.max_attempts = max_attempts
 
     def init_conv(
         self: "Model", city: str, place: str, description: str, user_id: int
@@ -70,6 +72,16 @@ class Model:
         self.memory.append(user_id, "assistant", reply)
         return reply
 
+    def get_hint_from_description(self, description: str, user_id: str) -> str:
+        prompt = (
+            "Ты ведущий текстовой игры по городским достопримечательностям. "
+            "На основе описания места, придумай короткую, немного загадочную, но полезную подсказку, "
+            "которая поможет игроку догадаться, что это за место.\n\n"
+            f"Описание: {description}\n\n"
+            "Подсказка:"
+        )
+        return self.ask(user_id, prompt)
+
     def ask(self: "Model", user_id: int, user_input: str) -> str:
         self.memory.append(user_id, "user", user_input)
         messages = self.memory.get(user_id)
@@ -83,6 +95,7 @@ class Model:
 
         reply = completion.choices[0].message.content.strip()
         self.memory.append(user_id, "assistant", reply)
+        self.memory.attempts_count += 1
         return reply
 
     def reset(self: "Model", user_id: int, places: list) -> None:

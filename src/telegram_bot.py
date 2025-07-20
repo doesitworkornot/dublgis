@@ -31,7 +31,6 @@ logging.basicConfig(
 
 
 def get_user_logger(user_id: str) -> logging.Logger:
-    """Возвращает (или создаёт) логер, пишущий в logs/<uid>.log"""
     logger_name = f"user_{user_id}"
     logger = logging.getLogger(logger_name)
 
@@ -48,7 +47,6 @@ def get_user_logger(user_id: str) -> logging.Logger:
 
 
 def new_round(user_id: str, context: ContextTypes.DEFAULT_TYPE) -> str:
-    """Начинает новый раунд и возвращает приветствие для пользователя."""
     city, place, description, lat, lon = dublgis_client.get_random_place_in_city_info()
     context.user_data.update(
         city=city, place=place, description=description, lat=lat, lon=lon
@@ -73,7 +71,6 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
 
 
 async def reset_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Команда /reset — принудительный сброс раунда."""
     user_id = str(update.effective_user.id)
     user_logger = get_user_logger(user_id)
 
@@ -119,41 +116,44 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         user_logger.info(f"MODEL RESET REPLY: {reply}")
         image_url = dublgis_client.get_place_image_url()
         if image_url:
-            await update.message.reply_photo(
-                photo=image_url, caption=reply, parse_mode="HTML"
-            )
+            await update.message.reply_photo(photo=image_url, caption=reply, parse_mode="HTML")
         else:
             await update.message.reply_text(reply, parse_mode="HTML")
-
-            # if nearby_places:
-            #     # await update.message.reply_text(f"Вот несколько мест рядом с {place}")
-
-            #     for near_place in nearby_places:
-            #         caption = f"<b>{near_place['name']}</b>\n"
-            #         if near_place["description"]:
-            #             caption += f"{near_place['description']}\n"
-            #         if near_place["rating"]:
-            #             caption += f"{near_place['rating']}\n"
-            #         if near_place["reviews_link"]:
-            #             caption += f"<a href='{near_place['reviews_link']}'>Почитать отзывы</a>\n"
-            #         if near_place["inside"]:
-            #             caption += f"<a href='{near_place['inside']}'>Организации в здании</a>\n"
-            #         caption += (
-            #             f"<a href='{near_place['object_link']}'>Открыть в 2ГИС</a>"
-            #         )
-
-            #         try:
-            #             await update.message.reply_photo(
-            #                 photo=near_place["image_url"],
-            #                 caption=caption,
-            #                 parse_mode="HTML",
-            #             )
-            #         except Exception:
-            #             await update.message.reply_text(caption, parse_mode="HTML")
 
         greeting = new_round(user_id, context)
         await update.message.reply_text(greeting)
         return
+
+    remaining = model_client.max_attempts - model_client.memory.attempts_count
+    if remaining <= 5:
+        description = context.user_data.get("description")
+        image_url = dublgis_client.get_place_image_url()
+        user_logger.info(f"REMAINING ATTEMPTS: {remaining}")
+
+        if description:
+            hint = model_client.get_hint_from_description(description, user_id)
+            user_logger.info(f"HINT: {hint}")
+
+            caption = (
+                f"<b>Подсказка!</b>\n"
+                f"Осталось <b>{remaining}</b> попыток.\n\n"
+                f"{hint}"
+            )
+            if image_url:
+                await update.message.reply_photo(photo=image_url, caption=caption, parse_mode="HTML")
+            else:
+                await update.message.reply_text(caption, parse_mode="HTML")
+    if remaining == 0:
+            reply = model_client.reset(user_id)
+            model_predict.reset(user_id)
+            await update.message.reply_text(
+                "Попытки исчерпаны, и не удалось получить подсказку.\n"
+                "Вот правильный ответ:\n\n" + reply,
+                parse_mode="HTML"
+            )
+            greeting = new_round(user_id, context)
+            await update.message.reply_text(greeting)
+            return
 
     user_logger.info(f"MODEL: {reply}")
     await update.message.reply_text(reply)
