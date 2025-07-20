@@ -4,7 +4,7 @@
 
 ## What is it?
 
-**DublGIS** is a small hobby project that turns OpenAI GPT‑4o into a Russian‑language «Akinator» that makes you guess random landmarks across Russian cities. It queries the public 2GIS Places API to fetch a sight with a detailed description, feeds that text to GPT‑4o and lets you ask yes/no questions until you name the place. ([raw.githubusercontent.com](https://raw.githubusercontent.com/doesitworkornot/dublgis/main/src/dublgis/dublgis_client.py), [raw.githubusercontent.com](https://raw.githubusercontent.com/doesitworkornot/dublgis/main/src/model/model_client.py))
+**DublGIS** is a small hobby project that turns OpenAI GPT‑4o into a Russian‑language «Akinator» that makes you guess random landmarks across Russian cities. It queries the public 2GIS Places API to fetch a sight with a detailed description, feeds that text to GPT‑4o and lets you ask yes/no questions until you name the place.
 
 ## Features
 
