@@ -147,29 +147,28 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     remaining = model_client.max_attempts - model_client.memory.attempts_count
     if remaining <= 5:
-        place = context.user_data.get("place")
         description = context.user_data.get("description")
         image_url = dublgis_client.get_place_image_url()
         user_logger.info(f"REMAINING ATTEMPTS: {remaining}")
 
-        if image_url:
+        if description:
+            hint = model_client.get_hint_from_description(description, user_id)
+            user_logger.info(f"HINT: {hint}")
+
             caption = (
                 f"<b>Подсказка!</b>\n"
-                f"Осталось всего <b>{remaining}</b> попыток.\n\n"
-                f"<b>Описание:</b> {description}"
+                f"Осталось <b>{remaining}</b> попыток.\n\n"
+                f"{hint}"
             )
-            await update.message.reply_photo(photo=image_url, caption=caption, parse_mode="HTML")
-        elif description:
-            await update.message.reply_text(
-                f"Осталось всего <b>{remaining}</b> попыток.\n"
-                f"<b>Описание:</b> {description}",
-                parse_mode="HTML"
-            )
-        else:
+            if image_url:
+                await update.message.reply_photo(photo=image_url, caption=caption, parse_mode="HTML")
+            else:
+                await update.message.reply_text(caption, parse_mode="HTML")
+    if remaining == 0:
             reply = model_client.reset(user_id)
             model_predict.reset(user_id)
             await update.message.reply_text(
-                "Вы исчерпали попытки, и не удалось получить подсказку.\n"
+                "Попытки исчерпаны, и не удалось получить подсказку.\n"
                 "Вот правильный ответ:\n\n" + reply,
                 parse_mode="HTML"
             )
@@ -179,7 +178,6 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
 
     user_logger.info(f"MODEL: {reply}")
     await update.message.reply_text(reply)
-
 
 
 def main() -> None:
