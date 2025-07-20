@@ -52,6 +52,7 @@ class Model:
         if places is not None:
             farewell_prompt += (
                 "Порекомендуй пользователю эти места и объясни почему они похожи на загаданное место:"
+                "Если у этого места хороший рейтинг, то обязательно похвали его и расскажи о нем"
                 f"Места: {places}"
             )
         self.memory.append(user_id, "system", farewell_prompt)
