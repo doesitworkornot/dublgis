@@ -134,7 +134,7 @@ class DublGISClient:
                     "reviews_link": f"{self.get_browser_link(item['id'])}/tab/reviews",
                     "inside": f"{self.get_browser_link(item['id'])}/tab/inside",
                     "object_link": self.get_browser_link(item["id"]),
-                    "image_url": self.get_place_image_url(item["id"]),
+                    # "image_url": self.get_place_image_url(item["id"]),
                 }
             )
 
