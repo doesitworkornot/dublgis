@@ -6,8 +6,10 @@ from .chat_memory import ChatMemory
 
 class Model:
     def __init__(
-        self: "Model", key: str, model_name: str = "chatgpt-4o-latest",
-        max_attempts: int = 20
+        self: "Model",
+        key: str,
+        model_name: str = "chatgpt-4o-latest",
+        max_attempts: int = 20,
     ) -> None:
         self.first_time = True
         self.model_name = model_name
@@ -44,21 +46,36 @@ class Model:
         self.memory.append(user_id, "assistant", answer)
         return answer
 
-    def bid_farewell(self: "Model", user_id: int, places: list) -> str:
+    def bid_farewell(self: "Model", user_id: int) -> str:
         farewell_prompt = (
             "Поблагодари пользователя за хорошую игру"
             "Расскажи пользователю о месте, которое было загадано"
             "Постарайся не быть слишком длинным и подробным, но и чтобы основные сведения были рассказаны"
             "Не прощайся с пользователем"
         )
-        if places is not None:
-            farewell_prompt += (
-                "Порекомендуй пользователю эти места и объясни почему они похожи на загаданное место:"
-                "Если у этого места хороший рейтинг, то обязательно похвали его и расскажи о нем"
-                "Постарайся быть немногословным, но при этом достаточным, чтобы заинтриговать пользоваателя"
-                f"Места: {places}"
-            )
+
         self.memory.append(user_id, "system", farewell_prompt)
+        messages = self.memory.get(user_id)
+
+        completion = self.client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            temperature=0.7,
+            max_tokens=300,
+        )
+
+        reply = completion.choices[0].message.content.strip()
+        self.memory.append(user_id, "assistant", reply)
+        return reply
+
+    def recommmend(self: "Model", user_id: int, places: list):
+        recommend_prompt = (
+            "Порекомендуй пользователю эти места и объясни почему они похожи на загаданное место:"
+            "Если у этого места хороший рейтинг, то обязательно похвали его и расскажи о нем"
+            "Постарайся быть немногословным, но при этом достаточным, чтобы заинтриговать пользоваателя"
+            f"Места: {places}"
+        )
+        self.memory.append(user_id, "system", recommend_prompt)
         messages = self.memory.get(user_id)
 
         completion = self.client.chat.completions.create(
@@ -98,8 +115,6 @@ class Model:
         self.memory.attempts_count += 1
         return reply
 
-    def reset(self: "Model", user_id: int, places: list) -> None:
+    def reset(self: "Model", user_id: int) -> None:
         self.first_time = False
-        reply = self.bid_farewell(user_id, places)
         self.memory.clear(user_id)
-        return reply

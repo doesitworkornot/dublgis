@@ -49,7 +49,7 @@ def get_user_logger(user_id: str) -> logging.Logger:
 
 
 def escape_markdown(text: str) -> str:
-    return re.sub(r'([_*\[\]()~`>#+\-=|{}.!\\])', r'\\\1', text)
+    return re.sub(r"([_*\[\]()~`>#+\-=|{}.!\\])", r"\\\1", text)
 
 
 def new_round(user_id: str, context: ContextTypes.DEFAULT_TYPE) -> str:
@@ -113,22 +113,43 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
         lon = context.user_data.get("lon")
         lat = context.user_data.get("lat")
         user_logger.info(f"place: {place}")
-        nearby_places = None
-        if place and lon and lat:
-            nearby_places = dublgis_client.get_nearby_places(lat, lon, user_logger)[:3]
-            user_logger.info(f"nearby_places: {nearby_places}")
 
-        reply = model_client.reset(user_id, nearby_places)
+        reply = model_client.bid_farewell(user_id)
         escaped_reply = escape_markdown(reply)
         model_predict.reset(user_id)
 
         user_logger.info(f"MODEL RESET REPLY: {escaped_reply}")
         image_url = dublgis_client.get_place_image_url()
         if image_url:
-            await update.message.reply_photo(photo=image_url, caption=escaped_reply, parse_mode="MarkdownV2")
+            await update.message.reply_photo(
+                photo=image_url, caption=escaped_reply, parse_mode="MarkdownV2"
+            )
         else:
             await update.message.reply_text(escaped_reply, parse_mode="MarkdownV2")
 
+        if place and lon and lat:
+            nearby_place = dublgis_client.get_nearby_places(lat, lon, user_logger)[0]
+            user_logger.info(f"nearby_places: {nearby_place}")
+            result_to_model = [
+                {
+                    "name": nearby_place["name"],
+                    "description": nearby_place["description"],
+                    "rating": nearby_place["rating"],
+                }
+            ]
+            img_url = nearby_place["image_url"]
+            place_url = nearby_place["object_link"]
+            reply = model_client.recommmend(user_id, result_to_model)
+            reply += f"\n Вот ссылка {place_url}, если тебе интересно."
+            escaped_reply = escape_markdown(reply)
+
+            if img_url:
+                await update.message.reply_photo(
+                    photo=img_url, caption=escaped_reply, parse_mode="MarkdownV2"
+                )
+            else:
+                await update.message.reply_text(escaped_reply, parse_mode="MarkdownV2")
+        model_client.reset(user_id)
         greeting = new_round(user_id, context)
         await update.message.reply_text(greeting)
         return
@@ -149,22 +170,24 @@ async def handle_text(update: Update, context: ContextTypes.DEFAULT_TYPE) -> Non
                 f"{hint}"
             )
             if image_url:
-                await update.message.reply_photo(photo=image_url, caption=caption, parse_mode="MarkdownV2")
+                await update.message.reply_photo(
+                    photo=image_url, caption=caption, parse_mode="MarkdownV2"
+                )
             else:
                 await update.message.reply_text(caption, parse_mode="MarkdownV2")
     if remaining == 0:
-            reply = model_client.reset(user_id)
-            model_predict.reset(user_id)
-            escaped_reply = escape_markdown(reply)
-            
-            await update.message.reply_text(
-                "Попытки исчерпаны, и не удалось получить подсказку.\n"
-                "Вот правильный ответ:\n\n" + escaped_reply,
-                parse_mode="MarkdownV2"
-            )
-            greeting = new_round(user_id, context)
-            await update.message.reply_text(greeting)
-            return
+        reply = model_client.reset(user_id)
+        model_predict.reset(user_id)
+        escaped_reply = escape_markdown(reply)
+
+        await update.message.reply_text(
+            "Попытки исчерпаны, и не удалось получить подсказку.\n"
+            "Вот правильный ответ:\n\n" + escaped_reply,
+            parse_mode="MarkdownV2",
+        )
+        greeting = new_round(user_id, context)
+        await update.message.reply_text(greeting)
+        return
 
     user_logger.info(f"MODEL: {reply}")
     escaped_reply = escape_markdown(reply)
